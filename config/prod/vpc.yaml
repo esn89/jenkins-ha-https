@@ -1,0 +1,14 @@
+template_path: vpc.yaml
+
+parameters:
+  CidrBlock: 10.0.0.0/16
+  EnableDnsSupport: "true"
+  EnableDnsHostnames: "true"
+  EuAz1: "eu-central-1a"
+  EuAz2: "eu-central-1b"
+  EuAz1PublicCidr: 10.0.1.0/24
+  EuAz2PublicCidr: 10.0.2.0/24
+  EuAz1PrivateCidr: 10.0.3.0/24
+  EuAz2PrivateCidr: 10.0.4.0/24
+  MapPublicIpOnLaunch: "false"
+  EIPDomain: "vpc"

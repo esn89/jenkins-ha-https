@@ -1,0 +1,204 @@
+---
+Parameters:
+  AssociatePublicIpAddress:
+    Type: String
+  VolumeType:
+    Type: String
+  VolumeSize:
+    Type: String
+  AmazonLinux:
+    Type: String
+  InstanceType:
+    Type: String
+  Private1Subnet:
+    Type: String
+  Private2Subnet:
+    Type: String
+  Public1Subnet:
+    Type: String
+  Public2Subnet:
+    Type: String
+  VpcId:
+    Type: String
+  DesiredCapacity:
+    Type: String
+  MaxSize:
+    Type: String
+  MinSize:
+    Type: String
+  JenkinsELBAllowedIP:
+    Type: String
+  JenkinsInstancePort:
+    Type: String
+  LoadBalancerPort:
+    Type: String
+  JenkinsInstanceProfile:
+    Type: String
+
+Resources:
+  JenkinsElasticFileSystem:
+    Type: 'AWS::EFS::FileSystem'
+    Properties:
+      ThroughputMode: bursting
+      FileSystemTags:
+        - Key: Application
+          Value: Jenkins
+
+  EFSMountAz1:
+    Type: 'AWS::EFS::MountTarget'
+    Properties:
+      FileSystemId: !Ref JenkinsElasticFileSystem
+      SecurityGroups:
+        - !Ref EFSAllowJenkins
+      SubnetId: !Ref Private1Subnet
+
+  EFSMountAz2:
+    Type: 'AWS::EFS::MountTarget'
+    Properties:
+      FileSystemId: !Ref JenkinsElasticFileSystem
+      SecurityGroups:
+        - !Ref EFSAllowJenkins
+      SubnetId: !Ref Private2Subnet
+
+  JenkinsSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Jenkins allow itself in
+      VpcId: !Ref VpcId
+
+  JenkinsAllowSelf:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JenkinsSG
+      IpProtocol: "-1"
+      FromPort: "-1"
+      ToPort: "-1"
+      SourceSecurityGroupId: !Ref JenkinsSG
+
+  EFSAllowJenkins:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: The security group for Jenkins
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref JenkinsSG
+
+  JenkinsLC:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          commands:
+            a:
+              command: "sudo yum update -y"
+            b:
+              command: "sudo yum install -y java-1.8.0"
+            c:
+              command: "mkdir -p /var/lib/jenkins"
+            d:
+              command: "yum install amazon-efs-utils -y"
+            e:
+              command: !Join
+                - ''
+                - - 'mount -t efs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport '
+                  - !Ref JenkinsElasticFileSystem
+                  - ':/ /var/lib/jenkins'
+            f:
+              command: "wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo"
+            g:
+              command: "rpm --import http://pkg.jenkins-ci.org/redhat-stable/jenkins-ci.org.key"
+            h:
+              command: "yum install jenkins -y"
+            i:
+              command: "service jenkins start"
+            j:
+              command: "chkconfig jenkins on"
+            k:
+              command:
+                !Join
+                  - ''
+                  - - 'echo "aws ssm put-parameter --name "jenkins-init-password" --type "SecureString "'
+                    - '--value $(cat /var/lib/jenkins/secrets/initialAdminPassword) --key-id alias/aws/ssm --overwrite --region '
+                    - !Ref 'AWS::Region"'
+                    - ' | at now +2 minutes'
+              #k:
+              #  command: !Sub "echo "aws ssm put-parameter --name 'jenkins-init-password' --type 'SecureString' --value $(cat /var/lib/jenkins/secrets/initialAdminPassword) --key-id alias/aws/ssm --overwrite --region ${AWS::Region}" | at now +2 minutes"
+    Properties:
+      AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+      ImageId: !Ref AmazonLinux
+      InstanceType: !Ref InstanceType
+      SecurityGroups:
+        - !Ref JenkinsSG
+      KeyName: evan
+      IamInstanceProfile: !Ref JenkinsInstanceProfile
+      UserData:
+        'Fn::Base64': !Sub |
+          #!/bin/bash -ex
+          /opt/aws/bin/cfn-init -s ${AWS::StackName} -r JenkinsLC --region ${AWS::Region}
+
+  JenkinsASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: JenkinsASG
+      DesiredCapacity: !Ref DesiredCapacity
+      LaunchConfigurationName: !Ref JenkinsLC
+      MaxSize: !Ref MaxSize
+      MinSize: !Ref MinSize
+      LoadBalancerNames:
+        - !Ref JenkinsELB
+      VPCZoneIdentifier:
+        - !Ref Public1Subnet
+        - !Ref Public2Subnet
+
+  JenkinsELBSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: The SG for JenkinsELB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: !Ref LoadBalancerPort
+          ToPort: !Ref LoadBalancerPort
+          CidrIp: !Ref JenkinsELBAllowedIP
+
+  JenkinsELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      CrossZone: true
+      HealthCheck:
+          HealthyThreshold: 2
+          Interval: 30
+          Target: HTTP:8080/login
+          Timeout: 3
+          UnhealthyThreshold: 2
+      Listeners:
+        -
+          InstancePort: !Ref JenkinsInstancePort
+          InstanceProtocol: HTTP
+          LoadBalancerPort: !Ref LoadBalancerPort
+          Protocol: HTTP
+      LoadBalancerName: Jenkins
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref JenkinsELBSG
+      Subnets:
+        - !Ref Public1Subnet
+        - !Ref Public2Subnet
+
+  JenkinsSGAllowELB:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JenkinsSG
+      IpProtocol: "tcp"
+      FromPort: !Ref JenkinsInstancePort
+      ToPort: !Ref JenkinsInstancePort
+      SourceSecurityGroupId: !Ref JenkinsELBSG
+
+
+Outputs:
+  DNSCName:
+    Description: The DNS CName
+    Value: !GetAtt JenkinsELB.DNSName

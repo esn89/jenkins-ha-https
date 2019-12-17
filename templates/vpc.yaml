@@ -1,0 +1,158 @@
+---
+Parameters:
+  CidrBlock:
+    Type: String
+  EnableDnsSupport:
+    Type: String
+  EnableDnsHostnames:
+    Type: String
+  EuAz1:
+    Type: String
+  EuAz2:
+    Type: String
+  EuAz1PublicCidr:
+    Type: String
+  EuAz2PublicCidr:
+    Type: String
+  EuAz1PrivateCidr:
+    Type: String
+  EuAz2PrivateCidr:
+    Type: String
+  MapPublicIpOnLaunch:
+    Type: String
+  EIPDomain:
+    Type: String
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:
+        Ref: CidrBlock
+      EnableDnsSupport: !Ref EnableDnsSupport
+      EnableDnsHostnames: !Ref EnableDnsHostnames
+
+  IGW:
+    Type: AWS::EC2::InternetGateway
+
+  VPCIGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
+
+  # Elastic IP is needed for NAT Gateway
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: !Ref EIPDomain
+    DependsOn: VPCIGWAttachment
+
+  NAT:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt 'EIP.AllocationId'
+      SubnetId: !Ref Public1
+
+  Public1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref EuAz1
+      CidrBlock: !Ref EuAz1PublicCidr
+      MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
+      VpcId: !Ref VPC
+
+  Public2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref EuAz2
+      CidrBlock: !Ref EuAz2PublicCidr
+      MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
+      VpcId: !Ref VPC
+
+  Private1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref EuAz1
+      CidrBlock: !Ref EuAz1PrivateCidr
+      MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
+      VpcId: !Ref VPC
+
+  Private2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref EuAz2
+      CidrBlock: !Ref EuAz2PrivateCidr
+      MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
+      VpcId: !Ref VPC
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoutes:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+      RouteTableId: !Ref PublicRouteTable
+    DependsOn: PublicRouteTable
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NAT
+      RouteTableId: !Ref PrivateRouteTable
+    DependsOn: NAT
+
+  EuAz1PublicAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref Public1
+    DependsOn: PublicRouteTable
+
+  EuAz2PublicAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref Public2
+    DependsOn: PublicRouteTable
+
+  EuAz1PrivAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref Private1
+    DependsOn: PrivateRouteTable
+
+  EuAz2PrivAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref Private2
+    DependsOn: PrivateRouteTable
+
+Outputs:
+  VpcId:
+    Value:
+      Ref: VPC
+  Private1Subnet:
+    Value:
+      Ref: Private1
+  Private2Subnet:
+    Value:
+      Ref: Private2
+  Public1Subnet:
+    Value:
+      Ref: Public1
+  Public2Subnet:
+    Value:
+      Ref: Public2

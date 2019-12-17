@@ -1,0 +1,19 @@
+template_path: jenkinsapplication.yaml
+
+parameters:
+  AssociatePublicIpAddress: "false"
+  VolumeType: "gp2"
+  VolumeSize: "15"
+  AmazonLinux: "ami-00aa4671cbf840d82"
+  InstanceType: "m4.large"
+  Public1Subnet: !stack_output prod/vpc.yaml::Public1Subnet
+  Public2Subnet: !stack_output prod/vpc.yaml::Public2Subnet
+  Private1Subnet: !stack_output prod/vpc.yaml::Private1Subnet
+  Private2Subnet: !stack_output prod/vpc.yaml::Private2Subnet
+  VpcId: !stack_output prod/vpc.yaml::VpcId
+  DesiredCapacity: "1"
+  MaxSize: "1"
+  MinSize: "1"
+  JenkinsELBAllowedIP:
+  JenkinsInstancePort: "8080"
+  LoadBalancerPort: "80"
