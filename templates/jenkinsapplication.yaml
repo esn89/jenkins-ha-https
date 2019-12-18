@@ -120,19 +120,17 @@ Resources:
               command:
                 !Join
                   - ''
-                  - - 'echo "aws ssm put-parameter --name "jenkins-init-password" --type "SecureString "'
+                  - - 'echo "aws ssm put-parameter --name "jenkins-init-password" --type "SecureString" '
                     - '--value $(cat /var/lib/jenkins/secrets/initialAdminPassword) --key-id alias/aws/ssm --overwrite --region '
-                    - !Ref 'AWS::Region"'
-                    - ' | at now +2 minutes'
-              #k:
-              #  command: !Sub "echo "aws ssm put-parameter --name 'jenkins-init-password' --type 'SecureString' --value $(cat /var/lib/jenkins/secrets/initialAdminPassword) --key-id alias/aws/ssm --overwrite --region ${AWS::Region}" | at now +2 minutes"
+                    - !Ref 'AWS::Region'
+                    - '" | at now +3 minutes'
     Properties:
       AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
       ImageId: !Ref AmazonLinux
       InstanceType: !Ref InstanceType
+      KeyName: "evan"
       SecurityGroups:
         - !Ref JenkinsSG
-      KeyName: evan
       IamInstanceProfile: !Ref JenkinsInstanceProfile
       UserData:
         'Fn::Base64': !Sub |
@@ -150,8 +148,8 @@ Resources:
       LoadBalancerNames:
         - !Ref JenkinsELB
       VPCZoneIdentifier:
-        - !Ref Public1Subnet
-        - !Ref Public2Subnet
+        - !Ref Private1Subnet
+        - !Ref Private2Subnet
 
   JenkinsELBSG:
     Type: 'AWS::EC2::SecurityGroup'
