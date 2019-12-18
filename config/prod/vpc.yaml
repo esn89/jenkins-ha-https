@@ -12,3 +12,5 @@ parameters:
   EuAz2PrivateCidr: 10.0.4.0/24
   MapPublicIpOnLaunch: "false"
   EIPDomain: "vpc"
+  Env: {{ command_path.0 }}
+  ProjectCode: {{ stack_group_config.project_code }}

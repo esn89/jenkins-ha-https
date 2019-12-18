@@ -22,6 +22,11 @@ Parameters:
     Type: String
   EIPDomain:
     Type: String
+  ProjectCode:
+    Type: String
+  Env:
+    Type: String
+
 
 Resources:
   VPC:
@@ -31,6 +36,13 @@ Resources:
         Ref: CidrBlock
       EnableDnsSupport: !Ref EnableDnsSupport
       EnableDnsHostnames: !Ref EnableDnsHostnames
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
 
   IGW:
     Type: AWS::EC2::InternetGateway
@@ -61,6 +73,14 @@ Resources:
       CidrBlock: !Ref EuAz1PublicCidr
       MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
       VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-public-subnet-1'
 
   Public2:
     Type: AWS::EC2::Subnet
@@ -69,6 +89,14 @@ Resources:
       CidrBlock: !Ref EuAz2PublicCidr
       MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
       VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-public-subnet-2'
 
   Private1:
     Type: AWS::EC2::Subnet
@@ -77,6 +105,14 @@ Resources:
       CidrBlock: !Ref EuAz1PrivateCidr
       MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
       VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-private-subnet-1'
 
   Private2:
     Type: AWS::EC2::Subnet
@@ -85,16 +121,40 @@ Resources:
       CidrBlock: !Ref EuAz2PrivateCidr
       MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
       VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-private-subnet-2'
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-route-to-igw'
 
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-route-to-nat'
 
   PublicRoutes:
     Type: AWS::EC2::Route

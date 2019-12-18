@@ -14,6 +14,9 @@ parameters:
   DesiredCapacity: "1"
   MaxSize: "1"
   MinSize: "1"
-  JenkinsELBAllowedIP:
+  JenkinsELBAllowedIP: {{ var.jenkins_allowed_ip | default("0.0.0.0/0") }}
   JenkinsInstancePort: "8080"
   LoadBalancerPort: "80"
+  JenkinsInstanceProfile: !stack_output prod/iamroles.yaml::JenkinsInstanceProfileArn
+  ProjectCode: {{ stack_group_config.project_code }}
+  Env: {{ command_path.0 }}

@@ -25,7 +25,9 @@ Before you running the below command, you must edit the [jenkinsapplication.yaml
 
 On line 17, the variable `JenkinsELBAllowedIP` is where you should specify a CIDR range.
 
-For example: `123.123.123.123/24`.
+For example: `123.123.123.123/24`.  By default, it is 0.0.0.0/0 which is open to the world.  If you use it as your personal CI/CD or build server, I would pass in my own IP address like so:
+
+`sceptre --var "JenkinsELBAllowedIP=123.123.123.123/32" create prod/jenkinsapplication.yaml` where "123.123.123.123/32" is your own IP address.
 
 `sceptre create prod/jenkinsapplication.yaml`
 

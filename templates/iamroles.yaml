@@ -1,0 +1,35 @@
+---
+Resources:
+  JenkinsRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName: JenkinsPutParameter
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Action: "ssm:PutParameter"
+              Effect: Allow
+              Resource: "*"
+            - Action: "kms:Encrypt"
+              Effect: Allow
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm"
+
+  JenkinsInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: /
+      Roles: [!Ref JenkinsRole]
+
+Outputs:
+  JenkinsInstanceProfileArn:
+    Description: The ARN of the Instance Profile
+    Value: !GetAtt JenkinsInstanceProfile.Arn
