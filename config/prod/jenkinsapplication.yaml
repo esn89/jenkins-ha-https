@@ -20,3 +20,5 @@ parameters:
   JenkinsInstanceProfile: !stack_output prod/iamroles.yaml::JenkinsInstanceProfileArn
   ProjectCode: {{ stack_group_config.project_code }}
   Env: {{ command_path.0 }}
+  JenkinsRecordSet: !stack_output prod/domain.yaml::RecordSetDomainName
+  HostedZoneName: {{ var.hostedzonename | default("evan.crlabs.cloud.") }}

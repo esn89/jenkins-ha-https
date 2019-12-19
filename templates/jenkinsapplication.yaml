@@ -38,6 +38,12 @@ Parameters:
     Type: String
   Env:
     Type: String
+  HostedZoneName:
+    Type: String
+  TTL:
+    Type: Number
+  Type:
+    Type: String
 
 
 Resources:
@@ -241,8 +247,42 @@ Resources:
       ToPort: !Ref JenkinsInstancePort
       SourceSecurityGroupId: !Ref JenkinsELBSG
 
+  MyHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      HostedZoneConfig:
+        Comment: "My own hosted zone"
+      Name: !Ref HostedZoneName
 
-Outputs:
-  DNSCName:
-    Description: The DNS CName
-    Value: !GetAtt JenkinsELB.DNSName
+  JenkinsRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref MyHostedZone
+      ResourceRecords:
+        - !Ref JenkinsELB.DNSName
+      Name: !Join
+        - ''
+        - - !Ref ProjectCode
+          - '.'
+          - !Ref HostedZoneName
+      TTL: !Ref TTL
+      Type: !Ref Type
+
+  JenkinsCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref JenkinsRecordSet
+      ValidationMethod: DNS
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-'
+              - 'jenkins-certificate'
+# Outputs:
+#   DNSCName:
+#     Description: The DNS CName
+#     Value: !GetAtt JenkinsELB.DNSName
