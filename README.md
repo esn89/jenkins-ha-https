@@ -16,10 +16,24 @@ Last but not least, you need to make sure that you have your AWS credentials set
 
 First the networking stack (foundation) needs to be laid out, this includes a VPC, some gateways, subnets, elastic IPs, routing tables and routes.
 
-`sceptre create prod/vpc.yaml`
+`sceptre create prod/vpc`
 
-Next comes the IAM Roles and InstanceProfiles as your Jenkins needs access to
+Second comes the IAM Roles and InstanceProfiles as your Jenkins needs access to
 set a parameter in SSM.
+
+`sceptre create prod/iamroles`
+
+Third, is the security groups.  This will create security groups for your Jenkins' instance, EFS, and Elastic Loadbalancer.
+
+`sceptre --var "jenkins_allowed_ip=123.123.123.123/32" create prod/securitygroups`
+
+The var "jenkins_allowed_ip" is optional.  It denotes the specific IP address, or range to which you want
+your ELB to opened to in terms of access.  I prefer to only open it to the IP address of my home since that
+is where I use my personal Jenkins for my own projects.
+
+By default, if you do not pass it anything, it is `0.0.0.0/0` which open to the world.
+
+`sceptre create prod/securitygroups`
 
 Finally, the application stack (Jenkins) is ready to be deployed.  This includes Jenkins in an AutoScaling Group of 1, launch configuration, elastic load balancer, an elastic file system (for a persistent $JENKINS_HOME across restarts and terminations) and some security groups.
 

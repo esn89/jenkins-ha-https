@@ -26,8 +26,6 @@ Parameters:
     Type: String
   MinSize:
     Type: String
-  JenkinsELBAllowedIP:
-    Type: String
   JenkinsInstancePort:
     Type: String
   LoadBalancerPort:
@@ -44,84 +42,40 @@ Parameters:
     Type: Number
   Type:
     Type: String
-
+  JenkinsSG:
+    Type: String
+  JenkinsELBSG:
+    Type: String
+  LoadBalancerProtocol:
+    Type: String
+  JenkinsElasticFileSystem:
+    Type: String
+  LoadBalancerInsecurePort:
+    Type: String
+  LoadBalancerInsecureProtocol:
+    Type: String
+  LoadBalancerType:
+    Type: String
+  LoadBalancerScheme:
+    Type: String
+  HealthCheckEnabled:
+    Type: String
+  HealthCheckIntervalSeconds:
+    Type: String
+  HealthCheckPath:
+    Type: String
+  HealthCheckPort:
+    Type: String
+  HealthCheckProtocol:
+    Type: String
+  HealthCheckTimeoutSeconds:
+    Type: String
+  HealthyThresholdCount:
+    Type: String
+  TargetType:
+    Type: String
 
 Resources:
-  JenkinsElasticFileSystem:
-    Type: 'AWS::EFS::FileSystem'
-    Properties:
-      ThroughputMode: bursting
-      FileSystemTags:
-        - Key: Application
-          Value: Jenkins
-        - Key: Name
-          Value: !Join
-            - ''
-            - - !Ref ProjectCode
-              - '-'
-              - !Ref Env
-              - '-'
-              - 'jenkins-efs'
-
-  EFSMountAz1:
-    Type: 'AWS::EFS::MountTarget'
-    Properties:
-      FileSystemId: !Ref JenkinsElasticFileSystem
-      SecurityGroups:
-        - !Ref EFSAllowJenkins
-      SubnetId: !Ref Private1Subnet
-
-  EFSMountAz2:
-    Type: 'AWS::EFS::MountTarget'
-    Properties:
-      FileSystemId: !Ref JenkinsElasticFileSystem
-      SecurityGroups:
-        - !Ref EFSAllowJenkins
-      SubnetId: !Ref Private2Subnet
-
-  JenkinsSG:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Jenkins allow itself in
-      VpcId: !Ref VpcId
-      Tags:
-        - Key: Name
-          Value: !Join
-            - ''
-            - - !Ref ProjectCode
-              - '-'
-              - !Ref Env
-              - '-'
-              - 'jenkins-self-sg'
-
-  JenkinsAllowSelf:
-    Type: 'AWS::EC2::SecurityGroupIngress'
-    Properties:
-      GroupId: !Ref JenkinsSG
-      IpProtocol: "-1"
-      FromPort: "-1"
-      ToPort: "-1"
-      SourceSecurityGroupId: !Ref JenkinsSG
-
-  EFSAllowJenkins:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: The security group for Jenkins
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: "tcp"
-          FromPort: 2049
-          ToPort: 2049
-          SourceSecurityGroupId: !Ref JenkinsSG
-      Tags:
-        - Key: Name
-          Value: !Join
-            - ''
-            - - !Ref ProjectCode
-              - '-'
-              - !Ref Env
-              - '-'
-              - 'sg'
 
   JenkinsLC:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -194,58 +148,71 @@ Resources:
       ResourceSignal:
         Count: !Ref DesiredCapacity
 
-  JenkinsELBSG:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: The SG for JenkinsELB
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: "tcp"
-          FromPort: !Ref LoadBalancerPort
-          ToPort: !Ref LoadBalancerPort
-          CidrIp: !Ref JenkinsELBAllowedIP
-      Tags:
-        - Key: Name
-          Value: !Join
-            - ''
-            - - !Ref ProjectCode
-              - '-'
-              - !Ref Env
-              - '-'
-              - 'jenkins-elb-sg'
-
   JenkinsELB:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      CrossZone: true
-      HealthCheck:
-          HealthyThreshold: 2
-          Interval: 30
-          Target: HTTP:8080/login
-          Timeout: 3
-          UnhealthyThreshold: 2
-      Listeners:
-        -
-          InstancePort: !Ref JenkinsInstancePort
-          InstanceProtocol: HTTP
-          LoadBalancerPort: !Ref LoadBalancerPort
-          Protocol: HTTP
-      LoadBalancerName: !Ref ProjectCode
-      Scheme: internet-facing
+      Name: !Join
+        - ''
+        - - !Ref ProjectCode
+          - '-'
+          - !Ref Env
+          - 'application-loadbalancer'
+      Scheme: !Ref LoadBalancerType
+      Type: !Ref LoadBalancerScheme
       SecurityGroups:
         - !Ref JenkinsELBSG
       Subnets:
         - !Ref Public1Subnet
         - !Ref Public2Subnet
 
-  JenkinsSGAllowELB:
-    Type: 'AWS::EC2::SecurityGroupIngress'
+  JenkinsELBHTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      GroupId: !Ref JenkinsSG
-      IpProtocol: "tcp"
-      FromPort: !Ref JenkinsInstancePort
-      ToPort: !Ref JenkinsInstancePort
-      SourceSecurityGroupId: !Ref JenkinsELBSG
+      Certificates:
+        - !Ref JenkinsCertificate
+      LoadBalancerArn: !Ref JenkinsELB
+      Port: !Ref LoadBalancerPort
+      Protocol: !Ref LoadBalancerProtocol
+      DefaultActions:
+        - TargetGroupArn: !Ref JenkinsTargetGroup
+          Type: "forward"
+
+  JenkinsELBHTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref JenkinsELB
+      Port: !Ref LoadBalancerInsecurePort
+      Protocol: !Ref LoadBalancerInsecureProtocol
+      DefaultActions:
+        - Type: "redirect"
+          RedirectConfig:
+            - Host: "#{host}"
+              Path: "#{path}"
+              Port: !Ref LoadBalancerPort
+              Protocol: !Ref LoadBalancerProtocol
+              Query: "#{query}"
+              StatusCode: "HTTP_301"
+
+  JenkinsTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: !Ref HealthCheckEnabled
+      HealthCheckIntervalSeconds: !Ref HealthCheckIntervalSeconds
+      HealthCheckPath: !Ref HealthCheckPath
+      HealthCheckPort: !Ref HealthCheckPort
+      HealthCheckProtocol: !Ref HealthCheckProtocol
+      HealthCheckTimeoutSeconds: !Ref HealthCheckTimeoutSeconds
+      HealthyThresholdCount: !Ref HealthyThresholdCount
+      Name: !Join
+        - ''
+        - - !Ref ProjectCode
+          - '-'
+          - !Ref Env
+          - '-target-group'
+      Port: !Ref JenkinsInstancePort
+      Protocol: !Ref HealthCheckProtocol
+      TargetType: !Ref TargetType
+      VpcId: !Ref VpcId
 
   MyHostedZone:
     Type: AWS::Route53::HostedZone
@@ -259,7 +226,7 @@ Resources:
     Properties:
       HostedZoneId: !Ref MyHostedZone
       ResourceRecords:
-        - !Ref JenkinsELB.DNSName
+        - !GetAtt JenkinsELB.DNSName
       Name: !Join
         - ''
         - - !Ref ProjectCode
@@ -271,7 +238,11 @@ Resources:
   JenkinsCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Ref JenkinsRecordSet
+      DomainName: !Join
+        - ''
+        - - !Ref ProjectCode
+          - '.'
+          - !Ref HostedZoneName
       ValidationMethod: DNS
       Tags:
         - Key: Name
@@ -282,7 +253,3 @@ Resources:
               - !Ref Env
               - '-'
               - 'jenkins-certificate'
-# Outputs:
-#   DNSCName:
-#     Description: The DNS CName
-#     Value: !GetAtt JenkinsELB.DNSName
