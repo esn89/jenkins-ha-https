@@ -1,0 +1,11 @@
+template_path: efs.yaml
+
+
+parameters:
+
+  ProjectCode: {{ stack_group_config.project_code }}
+  Env: {{ command_path.0 }}
+  Private1Subnet: !stack_output prod/vpc.yaml::Private1Subnet
+  Private2Subnet: !stack_output prod/vpc.yaml::Private2Subnet
+  EFSAllowJenkins: !stack_output prod/securitygroups.yaml::EFSAllowJenkins
+  IsEncrypted: "True"

@@ -1,0 +1,106 @@
+---
+Parameters:
+  ProjectCode:
+    Type: String
+  Env:
+    Type: String
+  VpcId:
+    Type: String
+  JenkinsELBAllowedIP:
+    Type: String
+  LoadBalancerPort:
+    Type: String
+  EFSPort:
+    Type: String
+  JenkinsInstancePort:
+    Type: String
+
+
+Resources:
+
+  JenkinsSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Jenkins allow itself in
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-'
+              - 'jenkins-self-sg'
+
+  JenkinsAllowSelf:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JenkinsSG
+      IpProtocol: "-1"
+      FromPort: "-1"
+      ToPort: "-1"
+      SourceSecurityGroupId: !Ref JenkinsSG
+
+  EFSAllowJenkins:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: The security group for Jenkins
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: !Ref EFSPort
+          ToPort: !Ref EFSPort
+          SourceSecurityGroupId: !Ref JenkinsSG
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-'
+              - 'efs-sg'
+
+  JenkinsELBSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: The SG for JenkinsELB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: !Ref LoadBalancerPort
+          ToPort: !Ref LoadBalancerPort
+          CidrIp: !Ref JenkinsELBAllowedIP
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-'
+              - 'jenkins-elb-sg'
+
+  JenkinsSGAllowELB:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JenkinsSG
+      IpProtocol: "tcp"
+      FromPort: !Ref JenkinsInstancePort
+      ToPort: !Ref JenkinsInstancePort
+      SourceSecurityGroupId: !Ref JenkinsELBSG
+
+
+Outputs:
+  JenkinsSG:
+    Description: The security group for the Jenkins' instance.
+    Value: !Ref JenkinsSG
+
+  JenkinsELBSG:
+    Description: The security group for the loadbalancer of Jenkins.
+    Value: !Ref JenkinsELBSG
+
+  EFSAllowJenkins:
+    Description: The security which allows the Jenkins' instance to access the EFS.
+    Value: !Ref EFSAllowJenkins

@@ -137,11 +137,11 @@ Resources:
       LaunchConfigurationName: !Ref JenkinsLC
       MaxSize: !Ref MaxSize
       MinSize: !Ref MinSize
-      LoadBalancerNames:
-        - !Ref JenkinsELB
       VPCZoneIdentifier:
         - !Ref Private1Subnet
         - !Ref Private2Subnet
+      TargetGroupARNs:
+        - !Ref JenkinsTargetGroup
     CreationPolicy:
       AutoScalingCreationPolicy:
         MinSuccessfulInstancesPercent: 100
@@ -156,9 +156,9 @@ Resources:
         - - !Ref ProjectCode
           - '-'
           - !Ref Env
-          - 'application-loadbalancer'
-      Scheme: !Ref LoadBalancerType
-      Type: !Ref LoadBalancerScheme
+          - '-alb'
+      Scheme: !Ref LoadBalancerScheme
+      Type: !Ref LoadBalancerType
       SecurityGroups:
         - !Ref JenkinsELBSG
       Subnets:
@@ -169,7 +169,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Certificates:
-        - !Ref JenkinsCertificate
+        - CertificateArn: !Ref JenkinsCertificate
       LoadBalancerArn: !Ref JenkinsELB
       Port: !Ref LoadBalancerPort
       Protocol: !Ref LoadBalancerProtocol
@@ -186,12 +186,12 @@ Resources:
       DefaultActions:
         - Type: "redirect"
           RedirectConfig:
-            - Host: "#{host}"
-              Path: "#{path}"
-              Port: !Ref LoadBalancerPort
-              Protocol: !Ref LoadBalancerProtocol
-              Query: "#{query}"
-              StatusCode: "HTTP_301"
+            Host: "#{host}"
+            Path: "/#{path}"
+            Port: !Ref LoadBalancerPort
+            Protocol: !Ref LoadBalancerProtocol
+            Query: "#{query}"
+            StatusCode: "HTTP_301"
 
   JenkinsTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup

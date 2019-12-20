@@ -1,0 +1,55 @@
+---
+Parameters:
+  ProjectCode:
+    Type: String
+  Env:
+    Type: String
+  EFSAllowJenkins:
+    Type: String
+  Private1Subnet:
+    Type: String
+  Private2Subnet:
+    Type: String
+  IsEncrypted:
+    Type: String
+
+Resources:
+
+  JenkinsElasticFileSystem:
+    Type: 'AWS::EFS::FileSystem'
+    Properties:
+      ThroughputMode: bursting
+      Encrypted: !Ref IsEncrypted
+      FileSystemTags:
+        - Key: Application
+          Value: Jenkins
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-'
+              - 'jenkins-efs'
+
+  EFSMountAz1:
+    Type: 'AWS::EFS::MountTarget'
+    Properties:
+      FileSystemId: !Ref JenkinsElasticFileSystem
+      SecurityGroups:
+        - !Ref EFSAllowJenkins
+      SubnetId: !Ref Private1Subnet
+
+  EFSMountAz2:
+    Type: 'AWS::EFS::MountTarget'
+    Properties:
+      FileSystemId: !Ref JenkinsElasticFileSystem
+      SecurityGroups:
+        - !Ref EFSAllowJenkins
+      SubnetId: !Ref Private2Subnet
+
+
+Outputs:
+  JenkinsElasticFileSystem:
+    Description: The resource ID of the EFS
+    Value: !Ref JenkinsElasticFileSystem
