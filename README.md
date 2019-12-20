@@ -16,14 +16,33 @@ Last but not least, you need to make sure that you have your AWS credentials set
 
 First the networking stack (foundation) needs to be laid out, this includes a VPC, some gateways, subnets, elastic IPs, routing tables and routes.
 
+This will create:
+- VPC
+- internet gateway
+- a NAT gateway
+- elastic IP for the NAT gateway
+- 2 public subnets
+- 2 private subnets
+- public route table
+- private route table
+
 `sceptre create prod/vpc`
 
 Second comes the IAM Roles and InstanceProfiles as your Jenkins needs access to
 set a parameter in SSM.
 
+This will create:
+- an IAM Role
+- an Instance Profile
+
 `sceptre create prod/iamroles`
 
 Third, is the security groups.  This will create security groups for your Jenkins' instance, EFS, and Elastic Loadbalancer.
+
+This will create:
+- security group for Jenkins
+- security group for the EFS to allow Jenkins access
+- security group for the load balancer
 
 `sceptre --var "jenkins_allowed_ip=123.123.123.123/32" create prod/securitygroups`
 
@@ -35,16 +54,27 @@ By default, if you do not pass it anything, it is `0.0.0.0/0` which open to the 
 
 `sceptre create prod/securitygroups`
 
-Finally, the application stack (Jenkins) is ready to be deployed.  This includes Jenkins in an AutoScaling Group of 1, launch configuration, elastic load balancer, an elastic file system (for a persistent $JENKINS_HOME across restarts and terminations) and some security groups.
+Fourth, we need the storage layer, in this case, I have chosen EFS since we would like our Jenkins to span at least 2 availability zones.
 
-Before you running the below command, you must edit the [jenkinsapplication.yaml](config/prod/jenkinsapplication.yaml) file to specify the IP range you wish to grant access to.
+`sceptre create prod/efs`
 
-By default, it is 0.0.0.0/0 which is open to the world.  If you use it as your personal CI/CD or build server, I would pass in my own IP address like so:
+Finally, the application stack for Jenkins is ready to be deployed.  This includes:
 
-`sceptre --var "JenkinsELBAllowedIP=123.123.123.123/32" create prod/jenkinsapplication.yaml` where "123.123.123.123/32" is your own IP address.
+- Jenkins in an AutoScaling Group of 1
+- launch configuration
+- a load balancer
+- hosted zone
+- record set
+- an SSL certificate managed by Amazon Certificate Manager
 
+You can provide your hosted zone name which you own in the parameter "hostedzonename".
+For example, "user.io".  The stack will create a record for your Jenkins with the record set of: "jenkins.user.io"
+`sceptre --var "hostedzonename=your.domain.here" create prod/jenkinsapplication.yaml`
+
+Or you can run this command and fill in your default value for the hosted zone name in the configuration template.
 `sceptre create prod/jenkinsapplication.yaml`
+
 
 ## Accessing your Jenkins:
 
-Jenkins can then be accessed via a stack output command to retrieve the load balancer's CNAME.  With that, you can paste it in your browser to access.
+Jenkins can then be accessed via a stack output command to retrieve the record set's name, you can paste it in your browser to access.
