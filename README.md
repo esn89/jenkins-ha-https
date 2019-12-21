@@ -3,7 +3,15 @@
 Deploys an instance of Jenkins to AWS in your region of choice.
 
 ## Overview
+![Overview](https://github.com/esn89/cfn-jenkins/images/highleveldesign.png "Overview")
 
+This deployment will span two availability zones.  Although the diagram doesn't show it, the Application Load Balancer resides in both public subnets.
+The NAT Gateway is in the public subnet, and both private subnets have routes to it.  It's main use is to allow the Jenkins instance in the private subnet
+to bootstrap itself.
+
+After bootstrapping, it will prompt you for a `initialAdminPassword` which can be found encrypted, in the Systems Manager's Parameter Store under the key "jenkins-init-password".
+There is an encrypted Elastic File Store deployed as well with mount points existing in each of the two private subnets.
+No SSH is open, as there shouldn't be any need to go inside the instance to set anything up.
 
 ## Getting started
 
@@ -95,6 +103,15 @@ Finally, the application stack for Jenkins is ready to be deployed.  This includ
 
 
 ## Domain validation:
+
+During the step of creating the Jenkins application stack, CloudFormation will hang, waiting for you to validate the domain/record set.
+This project uses "DNS" validation, therefore you should see output simlar to this:
+
+![DNS Validation](https://github.com/esn89/cfn-jenkins/images/dnsvalidation.png "DNS Validation")
+
+You will need to go to Route 53, your hosted zone, and in there, create a record set of type "CNAME" with the above parameters.
+
+
 
 ## Accessing your Jenkins:
 
