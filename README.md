@@ -32,74 +32,76 @@ Last but not least, you need to make sure that you have your AWS credentials set
 Before the stack is created, we must specify the region you wish to deploy to.
 In the main [config file](config/config.yaml), edit the `region` parameter to the one you want.
 
-`sceptre create prod/vpc`
+1. `sceptre create prod/vpc`
 
-First the networking stack (foundation) needs to be created.
+  First the networking stack (foundation) needs to be created.
 
-This will create:
-- VPC
-- internet gateway
-- a NAT gateway
-- elastic IP for the NAT gateway
-- 2 public subnets
-- 2 private subnets
-- public route table
-- private route table
-
-
-`sceptre create prod/iamroles`
-
-Second comes the IAM Roles and InstanceProfiles as your Jenkins needs access to
-set a parameter in SSM.
-
-This will create:
-- an IAM Role
-- an Instance Profile
+  This will create:
+  - VPC
+  - internet gateway
+  - a NAT gateway
+  - elastic IP for the NAT gateway
+  - 2 public subnets
+  - 2 private subnets
+  - public route table
+  - private route table
 
 
-`sceptre --var "jenkins_allowed_ip=123.123.123.123/32" create prod/securitygroups`
+2. `sceptre create prod/iamroles`
 
-Third, is the security groups.  This will create security groups for your Jenkins' instance, EFS, and Elastic Loadbalancer.
+  Second comes the IAM Roles and InstanceProfiles as your Jenkins needs access to
+  set a parameter in SSM.
 
-This will create:
-- security group for Jenkins
-- security group for the EFS to allow Jenkins access
-- security group for the load balancer
-
-
-The var "jenkins_allowed_ip" is optional.  It denotes the specific IP address, or range to which you want
-your ELB to opened to in terms of access.  I prefer to only open it to the IP address of my home since that
-is where I use my personal Jenkins for my own projects.
-
-By default, you can choose to not pass it anything, then the value will be `0.0.0.0/0` which open to the world:
-`sceptre create prod/securitygroups`
+  This will create:
+  - an IAM Role
+  - an Instance Profile
 
 
-`sceptre create prod/efs`
+3. `sceptre --var "jenkins_allowed_ip=123.123.123.123/32" create prod/securitygroups`
 
-Fourth, we need the storage layer, in this case, I have chosen EFS since we would like our Jenkins to span at least 2 availability zones.
+  Third, is the security groups.  This will create security groups for your Jenkins' instance, EFS, and Elastic Loadbalancer.
 
-This will create:
-- an elastic file system
-- 1 mount point in one AZ
-- another mount point in the second AZ
+  This will create:
+  - security group for Jenkins
+  - security group for the EFS to allow Jenkins access
+  - security group for the load balancer
 
 
-You can provide your hosted zone name which you own in the parameter "hostedzonename".
-For example, "user.io".  The stack will create a record for your Jenkins with the record set of: "jenkins.user.io"
-`sceptre --var "hostedzonename=your.domain.here" create prod/jenkinsapplication.yaml`
+  The var "jenkins_allowed_ip" is optional.  It denotes the specific IP address, or range to which you want
+  your ELB to opened to in terms of access.  I prefer to only open it to the IP address of my home since that
+  is where I use my personal Jenkins for my own projects.
 
-Or you can run this command and fill in your default value for the hosted zone name in the configuration template.
-`sceptre create prod/jenkinsapplication.yaml`
+  By default, you can choose to not pass it anything, then the value will be `0.0.0.0/0` which open to the world:
+  `sceptre create prod/securitygroups`
 
-Finally, the application stack for Jenkins is ready to be deployed.  This includes:
 
-- Jenkins in an AutoScaling Group of 1
-- launch configuration
-- a load balancer
-- hosted zone
-- record set
-- an SSL certificate managed by Amazon Certificate Manager
+4. `sceptre create prod/efs`
+
+  Fourth, we need the storage layer, in this case, I have chosen EFS since we would like our Jenkins to span at least 2 availability zones.
+
+  This will create:
+  - an elastic file system
+  - 1 mount point in one AZ
+  - another mount point in the second AZ
+
+
+5.  `sceptre --var "hostedzonename=your.domain.here" create prod/jenkinsapplication.yaml`
+
+  Finally, the application stack for Jenkins is ready to be deployed.
+  You can provide your hosted zone name which you own in the parameter "hostedzonename".
+  For example, "user.io".  The stack will create a record for your Jenkins with the record set of: "jenkins.user.io"
+
+  Or you can run this command and fill in your default value for the hosted zone name in the configuration template.
+  `sceptre create prod/jenkinsapplication.yaml`
+
+  This includes:
+
+  - Jenkins in an AutoScaling Group of 1
+  - launch configuration
+  - a load balancer
+  - hosted zone
+  - record set
+  - an SSL certificate managed by Amazon Certificate Manager
 
 
 ## Domain validation:
