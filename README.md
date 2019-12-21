@@ -2,20 +2,31 @@
 
 Deploys an instance of Jenkins to AWS in your region of choice.
 
+## Overview
+
+
 ## Getting started
 
 You will need [Sceptre](https://github.com/Sceptre/sceptre), a tool to deploy CloudFormation templates.  A virtualenv is highly recommended for this along with Python 3.6+
 
 `virtualenv venv`
+
 `. venv/bin/activate`
+
+`pip install -e ami_resolver`
+
 `pip install -r requirements`
 
 Last but not least, you need to make sure that you have your AWS credentials set in your environment variables.
 
 ## Deploying the stacks:
+
+Before the stack is created, we must specify the region you wish to deploy to.
+In the main [config file](config/config.yaml), edit the `region` parameter to the one you want.
+
 `sceptre create prod/vpc`
 
-First the networking stack (foundation) needs to be laid out, this includes a VPC, some gateways, subnets, elastic IPs, routing tables and routes.
+First the networking stack (foundation) needs to be created.
 
 This will create:
 - VPC
@@ -29,6 +40,7 @@ This will create:
 
 
 `sceptre create prod/iamroles`
+
 Second comes the IAM Roles and InstanceProfiles as your Jenkins needs access to
 set a parameter in SSM.
 
@@ -38,6 +50,7 @@ This will create:
 
 
 `sceptre --var "jenkins_allowed_ip=123.123.123.123/32" create prod/securitygroups`
+
 Third, is the security groups.  This will create security groups for your Jenkins' instance, EFS, and Elastic Loadbalancer.
 
 This will create:
@@ -55,6 +68,7 @@ By default, you can choose to not pass it anything, then the value will be `0.0.
 
 
 `sceptre create prod/efs`
+
 Fourth, we need the storage layer, in this case, I have chosen EFS since we would like our Jenkins to span at least 2 availability zones.
 
 This will create:
@@ -69,6 +83,7 @@ For example, "user.io".  The stack will create a record for your Jenkins with th
 
 Or you can run this command and fill in your default value for the hosted zone name in the configuration template.
 `sceptre create prod/jenkinsapplication.yaml`
+
 Finally, the application stack for Jenkins is ready to be deployed.  This includes:
 
 - Jenkins in an AutoScaling Group of 1
