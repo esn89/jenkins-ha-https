@@ -3,7 +3,7 @@
 Deploys an instance of Jenkins to AWS in your region of choice.
 
 ## Overview
-![Overview](https://github.com/esn89/cfn-jenkins/images/highleveldesign.png "Overview")
+![Overview](https://github.com/esn89/cfn-jenkins/blob/master/images/highleveldesign.png "Overview")
 
 This deployment will span two availability zones.  Although the diagram doesn't show it, the Application Load Balancer resides in both public subnets.
 The NAT Gateway is in the public subnet, and both private subnets have routes to it.  It's main use is to allow the Jenkins instance in the private subnet
@@ -107,7 +107,7 @@ Finally, the application stack for Jenkins is ready to be deployed.  This includ
 During the step of creating the Jenkins application stack, CloudFormation will hang, waiting for you to validate the domain/record set.
 This project uses "DNS" validation, therefore you should see output simlar to this:
 
-![DNS Validation](https://github.com/esn89/cfn-jenkins/images/dnsvalidation.png "DNS Validation")
+![DNS Validation](https://github.com/esn89/cfn-jenkins/blob/master/images/dnsvalidation.png "DNS Validation")
 
 You will need to go to Route 53, your hosted zone, and in there, create a record set of type "CNAME" with the above parameters.
 
