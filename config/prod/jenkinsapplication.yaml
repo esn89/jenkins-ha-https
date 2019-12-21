@@ -4,7 +4,7 @@ parameters:
   AssociatePublicIpAddress: "false"
   VolumeType: "gp2"
   VolumeSize: "15"
-  AmazonLinux: "ami-0d4c3eabb9e72650a"
+  AmazonLinux: !ami_resolver {{ stack_group_config.region }}
   InstanceType: "m4.large"
   Public1Subnet: !stack_output prod/vpc.yaml::Public1Subnet
   Public2Subnet: !stack_output prod/vpc.yaml::Public2Subnet
