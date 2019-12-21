@@ -6,17 +6,17 @@ Parameters:
     Type: String
   EnableDnsHostnames:
     Type: String
-  EuAz1:
+  Az1:
     Type: String
-  EuAz2:
+  Az2:
     Type: String
-  EuAz1PublicCidr:
+  Az1PublicCidr:
     Type: String
-  EuAz2PublicCidr:
+  Az2PublicCidr:
     Type: String
-  EuAz1PrivateCidr:
+  Az1PrivateCidr:
     Type: String
-  EuAz2PrivateCidr:
+  Az2PrivateCidr:
     Type: String
   MapPublicIpOnLaunch:
     Type: String
@@ -70,8 +70,8 @@ Resources:
   Public1:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: !Ref EuAz1
-      CidrBlock: !Ref EuAz1PublicCidr
+      AvailabilityZone: !Ref Az1
+      CidrBlock: !Ref Az1PublicCidr
       MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
       VpcId: !Ref VPC
       Tags:
@@ -86,8 +86,8 @@ Resources:
   Public2:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: !Ref EuAz2
-      CidrBlock: !Ref EuAz2PublicCidr
+      AvailabilityZone: !Ref Az2
+      CidrBlock: !Ref Az2PublicCidr
       MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
       VpcId: !Ref VPC
       Tags:
@@ -102,8 +102,8 @@ Resources:
   Private1:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: !Ref EuAz1
-      CidrBlock: !Ref EuAz1PrivateCidr
+      AvailabilityZone: !Ref Az1
+      CidrBlock: !Ref Az1PrivateCidr
       MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
       VpcId: !Ref VPC
       Tags:
@@ -118,8 +118,8 @@ Resources:
   Private2:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: !Ref EuAz2
-      CidrBlock: !Ref EuAz2PrivateCidr
+      AvailabilityZone: !Ref Az2
+      CidrBlock: !Ref Az2PrivateCidr
       MapPublicIpOnLaunch: !Ref MapPublicIpOnLaunch
       VpcId: !Ref VPC
       Tags:
@@ -173,28 +173,28 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable
     DependsOn: NAT
 
-  EuAz1PublicAssoc:
+  Az1PublicAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Public1
     DependsOn: PublicRouteTable
 
-  EuAz2PublicAssoc:
+  Az2PublicAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Public2
     DependsOn: PublicRouteTable
 
-  EuAz1PrivAssoc:
+  Az1PrivAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRouteTable
       SubnetId: !Ref Private1
     DependsOn: PrivateRouteTable
 
-  EuAz2PrivAssoc:
+  Az2PrivAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRouteTable

@@ -1,1 +1,3 @@
 venv/
+ami_resolver/__pycache__/
+ami_resolver/ami_resolver.egg-info/
