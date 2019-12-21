@@ -129,127 +129,127 @@ Resources:
           /opt/aws/bin/cfn-init -s ${AWS::StackName} -r JenkinsLC --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource JenkinsASG --region ${AWS::Region}
 
-  # JenkinsASG:
-  #   Type: AWS::AutoScaling::AutoScalingGroup
-  #   Properties:
-  #     AutoScalingGroupName: JenkinsASG
-  #     DesiredCapacity: !Ref DesiredCapacity
-  #     LaunchConfigurationName: !Ref JenkinsLC
-  #     MaxSize: !Ref MaxSize
-  #     MinSize: !Ref MinSize
-  #     VPCZoneIdentifier:
-  #       - !Ref Private1Subnet
-  #       - !Ref Private2Subnet
-  #     TargetGroupARNs:
-  #       - !Ref JenkinsTargetGroup
-  #   CreationPolicy:
-  #     AutoScalingCreationPolicy:
-  #       MinSuccessfulInstancesPercent: 100
-  #     ResourceSignal:
-  #       Count: !Ref DesiredCapacity
+  JenkinsASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: JenkinsASG
+      DesiredCapacity: !Ref DesiredCapacity
+      LaunchConfigurationName: !Ref JenkinsLC
+      MaxSize: !Ref MaxSize
+      MinSize: !Ref MinSize
+      VPCZoneIdentifier:
+        - !Ref Private1Subnet
+        - !Ref Private2Subnet
+      TargetGroupARNs:
+        - !Ref JenkinsTargetGroup
+    CreationPolicy:
+      AutoScalingCreationPolicy:
+        MinSuccessfulInstancesPercent: 100
+      ResourceSignal:
+        Count: !Ref DesiredCapacity
 
-  # JenkinsELB:
-  #   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-  #   Properties:
-  #     Name: !Join
-  #       - ''
-  #       - - !Ref ProjectCode
-  #         - '-'
-  #         - !Ref Env
-  #         - '-alb'
-  #     Scheme: !Ref LoadBalancerScheme
-  #     Type: !Ref LoadBalancerType
-  #     SecurityGroups:
-  #       - !Ref JenkinsELBSG
-  #     Subnets:
-  #       - !Ref Public1Subnet
-  #       - !Ref Public2Subnet
+  JenkinsELB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Join
+        - ''
+        - - !Ref ProjectCode
+          - '-'
+          - !Ref Env
+          - '-alb'
+      Scheme: !Ref LoadBalancerScheme
+      Type: !Ref LoadBalancerType
+      SecurityGroups:
+        - !Ref JenkinsELBSG
+      Subnets:
+        - !Ref Public1Subnet
+        - !Ref Public2Subnet
 
-  # JenkinsELBHTTPSListener:
-  #   Type: AWS::ElasticLoadBalancingV2::Listener
-  #   Properties:
-  #     Certificates:
-  #       - CertificateArn: !Ref JenkinsCertificate
-  #     LoadBalancerArn: !Ref JenkinsELB
-  #     Port: !Ref LoadBalancerPort
-  #     Protocol: !Ref LoadBalancerProtocol
-  #     DefaultActions:
-  #       - TargetGroupArn: !Ref JenkinsTargetGroup
-  #         Type: "forward"
+  JenkinsELBHTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref JenkinsCertificate
+      LoadBalancerArn: !Ref JenkinsELB
+      Port: !Ref LoadBalancerPort
+      Protocol: !Ref LoadBalancerProtocol
+      DefaultActions:
+        - TargetGroupArn: !Ref JenkinsTargetGroup
+          Type: "forward"
 
-  # JenkinsELBHTTPListener:
-  #   Type: AWS::ElasticLoadBalancingV2::Listener
-  #   Properties:
-  #     LoadBalancerArn: !Ref JenkinsELB
-  #     Port: !Ref LoadBalancerInsecurePort
-  #     Protocol: !Ref LoadBalancerInsecureProtocol
-  #     DefaultActions:
-  #       - Type: "redirect"
-  #         RedirectConfig:
-  #           Host: "#{host}"
-  #           Path: "/#{path}"
-  #           Port: !Ref LoadBalancerPort
-  #           Protocol: !Ref LoadBalancerProtocol
-  #           Query: "#{query}"
-  #           StatusCode: "HTTP_301"
+  JenkinsELBHTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref JenkinsELB
+      Port: !Ref LoadBalancerInsecurePort
+      Protocol: !Ref LoadBalancerInsecureProtocol
+      DefaultActions:
+        - Type: "redirect"
+          RedirectConfig:
+            Host: "#{host}"
+            Path: "/#{path}"
+            Port: !Ref LoadBalancerPort
+            Protocol: !Ref LoadBalancerProtocol
+            Query: "#{query}"
+            StatusCode: "HTTP_301"
 
-  # JenkinsTargetGroup:
-  #   Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  #   Properties:
-  #     HealthCheckEnabled: !Ref HealthCheckEnabled
-  #     HealthCheckIntervalSeconds: !Ref HealthCheckIntervalSeconds
-  #     HealthCheckPath: !Ref HealthCheckPath
-  #     HealthCheckPort: !Ref HealthCheckPort
-  #     HealthCheckProtocol: !Ref HealthCheckProtocol
-  #     HealthCheckTimeoutSeconds: !Ref HealthCheckTimeoutSeconds
-  #     HealthyThresholdCount: !Ref HealthyThresholdCount
-  #     Name: !Join
-  #       - ''
-  #       - - !Ref ProjectCode
-  #         - '-'
-  #         - !Ref Env
-  #         - '-target-group'
-  #     Port: !Ref JenkinsInstancePort
-  #     Protocol: !Ref HealthCheckProtocol
-  #     TargetType: !Ref TargetType
-  #     VpcId: !Ref VpcId
+  JenkinsTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: !Ref HealthCheckEnabled
+      HealthCheckIntervalSeconds: !Ref HealthCheckIntervalSeconds
+      HealthCheckPath: !Ref HealthCheckPath
+      HealthCheckPort: !Ref HealthCheckPort
+      HealthCheckProtocol: !Ref HealthCheckProtocol
+      HealthCheckTimeoutSeconds: !Ref HealthCheckTimeoutSeconds
+      HealthyThresholdCount: !Ref HealthyThresholdCount
+      Name: !Join
+        - ''
+        - - !Ref ProjectCode
+          - '-'
+          - !Ref Env
+          - '-target-group'
+      Port: !Ref JenkinsInstancePort
+      Protocol: !Ref HealthCheckProtocol
+      TargetType: !Ref TargetType
+      VpcId: !Ref VpcId
 
-  # MyHostedZone:
-  #   Type: AWS::Route53::HostedZone
-  #   Properties:
-  #     HostedZoneConfig:
-  #       Comment: "My own hosted zone"
-  #     Name: !Ref HostedZoneName
+  MyHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      HostedZoneConfig:
+        Comment: "My own hosted zone"
+      Name: !Ref HostedZoneName
 
-  # JenkinsRecordSet:
-  #   Type: AWS::Route53::RecordSet
-  #   Properties:
-  #     HostedZoneId: !Ref MyHostedZone
-  #     ResourceRecords:
-  #       - !GetAtt JenkinsELB.DNSName
-  #     Name: !Join
-  #       - ''
-  #       - - !Ref ProjectCode
-  #         - '.'
-  #         - !Ref HostedZoneName
-  #     TTL: !Ref TTL
-  #     Type: !Ref Type
+  JenkinsRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref MyHostedZone
+      ResourceRecords:
+        - !GetAtt JenkinsELB.DNSName
+      Name: !Join
+        - ''
+        - - !Ref ProjectCode
+          - '.'
+          - !Ref HostedZoneName
+      TTL: !Ref TTL
+      Type: !Ref Type
 
-  # JenkinsCertificate:
-  #   Type: AWS::CertificateManager::Certificate
-  #   Properties:
-  #     DomainName: !Join
-  #       - ''
-  #       - - !Ref ProjectCode
-  #         - '.'
-  #         - !Ref HostedZoneName
-  #     ValidationMethod: DNS
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Join
-  #           - ''
-  #           - - !Ref ProjectCode
-  #             - '-'
-  #             - !Ref Env
-  #             - '-'
-  #             - 'jenkins-certificate'
+  JenkinsCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Join
+        - ''
+        - - !Ref ProjectCode
+          - '.'
+          - !Ref HostedZoneName
+      ValidationMethod: DNS
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-'
+              - 'jenkins-certificate'
