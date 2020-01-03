@@ -1,4 +1,4 @@
-# Jenkins application (single node)
+# Jenkins application
 
 Deploys an instance of Jenkins to AWS in your region of choice.
 

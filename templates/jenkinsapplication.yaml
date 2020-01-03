@@ -42,6 +42,8 @@ Parameters:
     Type: Number
   Type:
     Type: String
+    AllowedValues: [CNAME]
+    Default: CNAME
   JenkinsSG:
     Type: String
   JenkinsELBSG:
@@ -56,8 +58,8 @@ Parameters:
     Type: String
   LoadBalancerType:
     Type: String
-  LoadBalancerScheme:
-    Type: String
+    AllowedValues: [application, classic]
+    Default: application
   HealthCheckEnabled:
     Type: String
   HealthCheckIntervalSeconds:
@@ -74,6 +76,27 @@ Parameters:
     Type: String
   TargetType:
     Type: String
+  ServerCertArn:
+    Type: String
+  ClientRootCertArn:
+    Type: String
+  ClientVPNCidr:
+    Type: String
+
+Conditions:
+
+  # Check to see if we have the Server Certificate ARN
+  ServerCertArnPresent: !Not [ !Equals [ !Ref ServerCertArn, "" ] ]
+
+  # Check to see if we have the Client Root Certificate ARN
+  ClientRootCertArnPresent: !Not [ !Equals [ !Ref ClientRootCertArn, "" ] ]
+
+  ClientVPNMethod: !And
+    - !Condition ServerCertArnPresent
+    - !Condition ClientRootCertArnPresent
+
+  # Create the HTTPS cert and target record if we do not have a ServerCertArn
+  HTTPSMethod: !Equals [ !Ref ServerCertArn, "" ]
 
 Resources:
 
@@ -156,29 +179,31 @@ Resources:
         - - !Ref ProjectCode
           - '-'
           - !Ref Env
-          - '-alb'
-      Scheme: !Ref LoadBalancerScheme
+          - '-alb2'
+      Scheme: !If [ HTTPSMethod, "internet-facing", "internal" ]
       Type: !Ref LoadBalancerType
       SecurityGroups:
         - !Ref JenkinsELBSG
       Subnets:
-        - !Ref Public1Subnet
-        - !Ref Public2Subnet
+        - !If [ HTTPSMethod, !Ref Public1Subnet, !Ref Private1Subnet ]
+        - !If [ HTTPSMethod, !Ref Public2Subnet, !Ref Private2Subnet ]
 
   JenkinsELBHTTPSListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Certificates:
-        - CertificateArn: !Ref JenkinsCertificate
+        - CertificateArn: !If [HTTPSMethod, !Ref JenkinsCertificate, !Ref "AWS::NoValue"]
       LoadBalancerArn: !Ref JenkinsELB
-      Port: !Ref LoadBalancerPort
-      Protocol: !Ref LoadBalancerProtocol
+      Port: !If [HTTPSMethod, !Ref LoadBalancerPort, !Ref LoadBalancerInsecurePort]
+      Protocol: !If [HTTPSMethod, !Ref LoadBalancerProtocol, !Ref LoadBalancerInsecureProtocol]
       DefaultActions:
         - TargetGroupArn: !Ref JenkinsTargetGroup
           Type: "forward"
 
+  # For direction
   JenkinsELBHTTPListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HTTPSMethod
     Properties:
       LoadBalancerArn: !Ref JenkinsELB
       Port: !Ref LoadBalancerInsecurePort
@@ -216,6 +241,7 @@ Resources:
 
   MyHostedZone:
     Type: AWS::Route53::HostedZone
+    Condition: HTTPSMethod
     Properties:
       HostedZoneConfig:
         Comment: "My own hosted zone"
@@ -223,6 +249,7 @@ Resources:
 
   JenkinsRecordSet:
     Type: AWS::Route53::RecordSet
+    Condition: HTTPSMethod
     Properties:
       HostedZoneId: !Ref MyHostedZone
       ResourceRecords:
@@ -237,6 +264,7 @@ Resources:
 
   JenkinsCertificate:
     Type: AWS::CertificateManager::Certificate
+    Condition: HTTPSMethod
     Properties:
       DomainName: !Join
         - ''
@@ -253,3 +281,53 @@ Resources:
               - !Ref Env
               - '-'
               - 'jenkins-certificate'
+
+  # ClientVPN
+  ClientVPNEndpoint:
+    Type: AWS::EC2::ClientVpnEndpoint
+    Condition: ClientVPNMethod
+    Properties:
+      AuthenticationOptions:
+        - Type: "certificate-authentication"
+          MutualAuthentication:
+            ClientRootCertificateChainArn: !Ref ClientRootCertArn
+      ClientCidrBlock: !Ref ClientVPNCidr
+      ConnectionLogOptions:
+        Enabled: false
+      Description: "Client VPN for Jenkin's access"
+      ServerCertificateArn: !Ref ServerCertArn
+      TagSpecifications:
+        - ResourceType: "client-vpn-endpoint"
+          Tags:
+          - Key: Name
+            Value: !Join
+              - ''
+              - - !Ref ProjectCode
+                - '-'
+                - !Ref Env
+                - '-'
+                - 'client-vpn'
+
+  ClientVPNTargetPrivSubnet1:
+    Type: AWS::EC2::ClientVpnTargetNetworkAssociation
+    Condition: ClientVPNMethod
+    Properties:
+      ClientVpnEndpointId: !Ref ClientVPNEndpoint
+      SubnetId: !Ref Public1Subnet
+
+  ClientVPNTargetPrivSubnet2:
+    Type: AWS::EC2::ClientVpnTargetNetworkAssociation
+    Condition: ClientVPNMethod
+    Properties:
+      ClientVpnEndpointId: !Ref ClientVPNEndpoint
+      SubnetId: !Ref Public2Subnet
+
+  # Finally, authorize clients:
+  ClientVPNAuthorization:
+    Type: AWS::EC2::ClientVpnAuthorizationRule
+    Condition: ClientVPNMethod
+    Properties:
+      AuthorizeAllGroups: true
+      ClientVpnEndpointId: !Ref ClientVPNEndpoint
+      Description: "Allow client VPN user to access VPC resources"
+      TargetNetworkCidr: "10.0.0.0/16"
