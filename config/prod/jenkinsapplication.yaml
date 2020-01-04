@@ -22,6 +22,7 @@ parameters:
   JenkinsInstanceProfile: !stack_output prod/iamroles.yaml::JenkinsInstanceProfileArn
   JenkinsElasticFileSystem: !stack_output prod/efs.yaml::JenkinsElasticFileSystem
   HostedZoneName: {{ var.hostedzonename | default("esn.crlabs.cloud") }}
+  DefaultSgId: !stack_output prod/vpc.yaml::DefaultSgId
   JenkinsSG: !stack_output prod/securitygroups.yaml::JenkinsSG
   JenkinsELBSG: !stack_output prod/securitygroups.yaml::JenkinsELBSG
   Type: "CNAME"

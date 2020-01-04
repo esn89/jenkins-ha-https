@@ -203,17 +203,25 @@ Resources:
 
 Outputs:
   VpcId:
+    Description: The VPC ID
     Value:
       Ref: VPC
   Private1Subnet:
+    Description: The private subnet ID
     Value:
       Ref: Private1
   Private2Subnet:
+    Description: The private subnet ID
     Value:
       Ref: Private2
   Public1Subnet:
+    Description: The public subnet ID
     Value:
       Ref: Public1
   Public2Subnet:
+    Description: The public subnet ID
     Value:
       Ref: Public2
+  DefaultSgId:
+    Description: The id of the default security group
+    Value: !GetAtt VPC.DefaultSecurityGroup
