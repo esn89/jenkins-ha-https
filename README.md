@@ -134,3 +134,7 @@ You will see a screen similar to this:
 The initialAdminPassword is located in AWS System Manager Parameter Store:
 
 ![ssmps](https://github.com/esn89/jenkins-ha-https/blob/master/images/jenkinsinitpassword.png)
+
+Or, using the AWS CLI:
+
+```aws ssm get-parameter --name jenkins-init-password --with-decryption```
