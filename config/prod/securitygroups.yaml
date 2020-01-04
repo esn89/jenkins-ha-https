@@ -2,7 +2,7 @@ template_path: securitygroups.yaml
 
 parameters:
   VpcId: !stack_output prod/vpc.yaml::VpcId
-  JenkinsELBAllowedIP: {{ var.jenkins_allowed_ip | default("0.0.0.0/0")}}
+  JenkinsELBAllowedIP: {{ var.jenkins_allowed_ip | default("0.0.0.0/32")}}
   JenkinsInstancePort: "8080"
   LoadBalancerPort: "443"
   EFSPort: "2049"

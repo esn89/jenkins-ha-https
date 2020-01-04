@@ -2,7 +2,15 @@
 
 Deploys an instance of Jenkins to AWS in your region of choice.
 
+This project offers two main ways to connect to your Jenkins instance:
+
+- With HTTPS using a domain that you own and creating a DNS record like:    ```jenkins.yourdomain.com```
+- Or over AWS's Client VPN service.  If you wish to use this option, follow the guide as shown in the wiki [here](https://github.com/esn89/jenkins-ha-https/wiki/Client-VPN-setup).
+
+Otherwise, for the HTTPS option, continue along.
+
 ## Overview
+
 ![Overview](https://github.com/esn89/cfn-jenkins/blob/master/images/highleveldesign.png "Overview")
 
 This deployment will span two availability zones.  Although the diagram doesn't show it, the Application Load Balancer resides in both public subnets.
@@ -71,7 +79,7 @@ In the main [config file](config/config.yaml), edit the `region` parameter to th
    your ELB to opened to in terms of access.  I prefer to only open it to the IP address of my home since that
    is where I use my personal Jenkins for my own projects.
 
-   By default, you can choose to not pass it anything, then the value will be `0.0.0.0/0` which open to the world:
+   By default, you can choose to not pass it anything, then the value will be `0.0.0.0/32` which not be open to anyone:
    `sceptre create prod/securitygroups`
 
 
@@ -114,7 +122,13 @@ This project uses "DNS" validation, therefore you should see output simlar to th
 You will need to go to Route 53, your hosted zone, and in there, create a record set of type "CNAME" with the above parameters.
 
 
-
 ## Accessing your Jenkins:
 
 Jenkins can then be accessed via a stack output command to retrieve the record set's name, you can paste it in your browser to access.
+```sceptre list outputs prod/jenkinsapplication```
+
+You will see a screen similar to this:
+
+
+The initialAdminPassword is located in AWS System Manager Parameter Store:
+
