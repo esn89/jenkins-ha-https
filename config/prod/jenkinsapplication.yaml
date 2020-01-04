@@ -37,6 +37,6 @@ parameters:
   TargetType: "instance"
   ProjectCode: {{ stack_group_config.project_code }}
   Env: {{ command_path.0 }}
-  ServerCertArn: {{ var.servercertarn | default("") }}
-  ClientRootCertArn: {{ var.clientrootcertarn | default("") }}
+  ServerCertArn: {{ var.servercertarn | default("None") }}
+  ClientRootCertArn: {{ var.clientrootcertarn | default("None") }}
   ClientVPNCidr: "10.8.0.0/22"

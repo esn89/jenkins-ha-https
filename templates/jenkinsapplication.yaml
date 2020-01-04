@@ -86,17 +86,19 @@ Parameters:
 Conditions:
 
   # Check to see if we have the Server Certificate ARN
-  ServerCertArnPresent: !Not [ !Equals [ !Ref ServerCertArn, "" ] ]
+  ServerCertArnPresent: !Not [ !Equals [ !Ref ServerCertArn, "None" ] ]
 
   # Check to see if we have the Client Root Certificate ARN
-  ClientRootCertArnPresent: !Not [ !Equals [ !Ref ClientRootCertArn, "" ] ]
+  ClientRootCertArnPresent: !Not [ !Equals [ !Ref ClientRootCertArn, "None" ] ]
 
   ClientVPNMethod: !And
     - !Condition ServerCertArnPresent
     - !Condition ClientRootCertArnPresent
 
   # Create the HTTPS cert and target record if we do not have a ServerCertArn
-  HTTPSMethod: !Equals [ !Ref ServerCertArn, "" ]
+  HTTPSMethod: !And
+    - !Equals [ !Ref ServerCertArn, "None" ]
+    - !Equals [ !Ref ClientRootCertArn, "None" ]
 
 Resources:
 
@@ -331,3 +333,8 @@ Resources:
       ClientVpnEndpointId: !Ref ClientVPNEndpoint
       Description: "Allow client VPN user to access VPC resources"
       TargetNetworkCidr: "10.0.0.0/16"
+
+Outputs:
+  JenkinsURL:
+    Description: The URL to access Jenkins
+    Value: !If [ HTTPSMethod, !Ref JenkinsRecordSet, !GetAtt JenkinsELB.DNSName ]
