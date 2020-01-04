@@ -129,6 +129,8 @@ Jenkins can then be accessed via a stack output command to retrieve the record s
 
 You will see a screen similar to this:
 
+![unlock](https://github.com/esn89/jenkins-ha-https/blob/master/images/unlockjenkins.png)
 
 The initialAdminPassword is located in AWS System Manager Parameter Store:
 
+![ssmps](https://github.com/esn89/jenkins-ha-https/blob/master/images/jenkinsinitpassword.png)
