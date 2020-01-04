@@ -38,6 +38,8 @@ Parameters:
     Type: String
   HostedZoneName:
     Type: String
+  DefaultSgId:
+    Type: String
   TTL:
     Type: Number
   Type:
@@ -186,6 +188,7 @@ Resources:
       Type: !Ref LoadBalancerType
       SecurityGroups:
         - !Ref JenkinsELBSG
+        - !If [ ClientVPNMethod, !Ref ClientVpnToJenkinsELB, !Ref "AWS::NoValue" ]
       Subnets:
         - !If [ HTTPSMethod, !Ref Public1Subnet, !Ref Private1Subnet ]
         - !If [ HTTPSMethod, !Ref Public2Subnet, !Ref Private2Subnet ]
@@ -324,7 +327,7 @@ Resources:
       ClientVpnEndpointId: !Ref ClientVPNEndpoint
       SubnetId: !Ref Public2Subnet
 
-  # Finally, authorize clients:
+  # Authorize clients:
   ClientVPNAuthorization:
     Type: AWS::EC2::ClientVpnAuthorizationRule
     Condition: ClientVPNMethod
@@ -333,6 +336,31 @@ Resources:
       ClientVpnEndpointId: !Ref ClientVPNEndpoint
       Description: "Allow client VPN user to access VPC resources"
       TargetNetworkCidr: "10.0.0.0/16"
+
+  # Finally, we need to allow the Client VPN's security group to access the
+  # internal application load balancer, we use the ClientVPN method
+
+  ClientVpnToJenkinsELB:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: ClientVPNMethod
+    Properties:
+      GroupDescription: Allow the SG of the client vpn to access the Jenkins ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: !Ref LoadBalancerInsecurePort
+          ToPort: !Ref LoadBalancerInsecurePort
+          SourceSecurityGroupId: !Ref DefaultSgId
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref ProjectCode
+              - '-'
+              - !Ref Env
+              - '-'
+              - 'jenkins-cvpn-to-elb-sg'
+
 
 Outputs:
   JenkinsURL:
