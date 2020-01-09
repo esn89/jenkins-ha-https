@@ -31,7 +31,7 @@ You will need [Sceptre](https://github.com/Sceptre/sceptre), a tool to deploy Cl
 
 `pip install -e ami_resolver`
 
-`pip install -r requirements`
+`pip install -r requirements.txt`
 
 Last but not least, you need to make sure that you have your AWS credentials set in your environment variables.
 
@@ -75,9 +75,9 @@ In the main [config file](config/config.yaml), edit the `region` parameter to th
    - security group for the load balancer
 
 
-   The var "jenkins_allowed_ip" is optional.  It denotes the specific IP address, or range to which you want
-   your ELB to opened to in terms of access.  I prefer to only open it to the IP address of my home since that
-   is where I use my personal Jenkins for my own projects.
+   The var "jenkins_allowed_ip" is optional, although you will need to use it if you want to access your Jenkins.
+   It denotes the specific IP address, or range to which you want your ELB to opened to in terms of access.
+   I prefer to only open it to the IP address of my home since that is where I use my personal Jenkins for my own projects.
 
    By default, you can choose to not pass it anything, then the value will be `0.0.0.0/32` which not be open to anyone:
    `sceptre create prod/securitygroups`
@@ -93,7 +93,7 @@ In the main [config file](config/config.yaml), edit the `region` parameter to th
    - another mount point in the second AZ
 
 
-5.  `sceptre --var "hostedzonename=your.domain.here" create prod/jenkinsapplication.yaml`
+5.  `sceptre --var "hostedzonename=your.domain.here" --var jenkins_allowed_ip=123.123.123.123/32 create prod/jenkinsapplication.yaml`
 
    Finally, the application stack for Jenkins is ready to be deployed.
    You can provide your hosted zone name which you own in the parameter "hostedzonename".

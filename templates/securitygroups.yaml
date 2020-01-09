@@ -10,6 +10,8 @@ Parameters:
     Type: String
   LoadBalancerPort:
     Type: String
+  InsecureLoadBalancerPort:
+    Type: String
   EFSPort:
     Type: String
   JenkinsInstancePort:
@@ -71,6 +73,11 @@ Resources:
         - IpProtocol: "tcp"
           FromPort: !Ref LoadBalancerPort
           ToPort: !Ref LoadBalancerPort
+          CidrIp: !Ref JenkinsELBAllowedIP
+          # Port 80 is required to allow redirection to 443
+        - IpProtocol: "tcp"
+          FromPort: !Ref InsecureLoadBalancerPort
+          ToPort: !Ref InsecureLoadBalancerPort
           CidrIp: !Ref JenkinsELBAllowedIP
       Tags:
         - Key: Name

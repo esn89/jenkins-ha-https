@@ -5,6 +5,7 @@ parameters:
   JenkinsELBAllowedIP: {{ var.jenkins_allowed_ip | default("0.0.0.0/32")}}
   JenkinsInstancePort: "8080"
   LoadBalancerPort: "443"
+  InsecureLoadBalancerPort: "80"
   EFSPort: "2049"
   ProjectCode: {{ stack_group_config.project_code }}
   Env: {{ command_path.0 }}
